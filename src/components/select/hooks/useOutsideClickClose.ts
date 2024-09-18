@@ -17,15 +17,17 @@ export const useOutsideClickClose = ({
 		const handleClick = (event: MouseEvent) => {
 			const { target } = event;
 			if (target instanceof Node && !rootRef.current?.contains(target)) {
-				isOpen && onClose?.();
-				onChange?.(false);
+				if (isOpen) {
+					onClose?.();
+					onChange(false);
+				}
 			}
 		};
 
-		window.addEventListener('click', handleClick);
+		document.addEventListener('mousedown', handleClick);
 
 		return () => {
-			window.removeEventListener('click', handleClick);
+			document.removeEventListener('mousedown', handleClick);
 		};
-	}, [onClose, onChange, isOpen]);
+	}, [isOpen, onClose, onChange, rootRef]);
 };

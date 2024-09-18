@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { ArrowButton } from 'components/arrow-button';
 import { Button } from 'components/button';
 import styles from './ArticleParamsForm.module.scss';
-import clsx from 'clsx';
 import { Select } from '../select';
 import { RadioGroup } from '../radio-group';
 import { Separator } from '../separator';
@@ -17,6 +16,8 @@ import {
 	defaultArticleState,
 	OptionType,
 } from 'src/constants/articleProps';
+import { useOutsideClickClose } from '../select/hooks/useOutsideClickClose';
+import clsx from 'clsx';
 
 type ArticleParamsFormProps = {
 	setDataPage: (data: ArticleStateType) => void;
@@ -25,7 +26,7 @@ type ArticleParamsFormProps = {
 export const ArticleParamsForm: React.FC<ArticleParamsFormProps> = ({
 	setDataPage,
 }) => {
-	const [open, setOpen] = useState<boolean>(false);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [fontFamily, setFontFamily] = useState<OptionType>(
 		defaultArticleState.fontFamilyOption
 	);
@@ -41,61 +42,78 @@ export const ArticleParamsForm: React.FC<ArticleParamsFormProps> = ({
 	const [contentWidth, setContentWidth] = useState<OptionType>(
 		defaultArticleState.contentWidth
 	);
+	const rootRef = useRef<HTMLDivElement | null>(null);
 
-	const handleOpenForm = () => {
-		setOpen((prevOpen) => !prevOpen);
-	};
+	const handleFontFamilyChange = useCallback(
+		(fontFamily: OptionType) => setFontFamily(fontFamily),
+		[]
+	);
+	const handleFontSizeChange = useCallback(
+		(fontSize: OptionType) => setFontSize(fontSize),
+		[]
+	);
+	const handleFontColorChange = useCallback(
+		(fontColor: OptionType) => setFontColor(fontColor),
+		[]
+	);
+	const handleBackgroundColorChange = useCallback(
+		(backgroundColor: OptionType) => setBackgroundColor(backgroundColor),
+		[]
+	);
+	const handleContentWidthChange = useCallback(
+		(contentWidth: OptionType) => setContentWidth(contentWidth),
+		[]
+	);
 
-	const handleFontFamilyChange = (fontFamily: OptionType) => {
-		setFontFamily(fontFamily);
-	};
+	const handleReset = useCallback(() => {
+		setFontFamily(defaultArticleState.fontFamilyOption);
+		setFontSize(defaultArticleState.fontSizeOption);
+		setFontColor(defaultArticleState.fontColor);
+		setBackgroundColor(defaultArticleState.backgroundColor);
+		setContentWidth(defaultArticleState.contentWidth);
+		setDataPage(defaultArticleState);
+	}, [setDataPage]);
 
-	const handleFontSizeChange = (fontSize: OptionType) => {
-		setFontSize(fontSize);
-	};
+	const handleSubmit = useCallback(
+		(e: React.FormEvent<HTMLFormElement>) => {
+			e.preventDefault();
+			setDataPage({
+				fontFamilyOption: fontFamily,
+				fontSizeOption: fontSize,
+				fontColor: fontColor,
+				backgroundColor: backgroundColor,
+				contentWidth: contentWidth,
+			});
+		},
+		[
+			setDataPage,
+			fontFamily,
+			fontSize,
+			fontColor,
+			backgroundColor,
+			contentWidth,
+		]
+	);
+	const handleOpenForm = useCallback(() => {
+		setIsMenuOpen((prev) => !prev);
+	}, []);
 
-	const handleFontColorChange = (fontColor: OptionType) => {
-		setFontColor(fontColor);
-	};
-
-	const handleBackgroundColorChange = (backgroundColor: OptionType) => {
-		setBackgroundColor(backgroundColor);
-	};
-
-	const handleContentWidthChange = (contentWidth: OptionType) => {
-		setContentWidth(contentWidth);
-	};
-
-	const handleReset = () => {
-		const initialState: ArticleStateType = defaultArticleState;
-		setFontFamily(initialState.fontFamilyOption);
-		setFontSize(initialState.fontSizeOption);
-		setFontColor(initialState.fontColor);
-		setBackgroundColor(initialState.backgroundColor);
-		setContentWidth(initialState.contentWidth);
-	};
-
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		setDataPage({
-			fontFamilyOption: fontFamily,
-			fontSizeOption: fontSize,
-			fontColor: fontColor,
-			backgroundColor: backgroundColor,
-			contentWidth: contentWidth,
-		});
-	};
-
-	const modalStyle = clsx(styles.container, {
-		[styles.container_open]: open,
+	useOutsideClickClose({
+		isOpen: isMenuOpen,
+		rootRef: rootRef,
+		onClose: () => setIsMenuOpen(false),
+		onChange: setIsMenuOpen,
 	});
 
+	const modalStyle = clsx(styles.container, {
+		[styles.container_open]: isMenuOpen,
+	});
 	return (
 		<>
-			<ArrowButton onClick={handleOpenForm} />
-			<aside className={modalStyle}>
+			<ArrowButton isOpen={isMenuOpen} onClick={handleOpenForm} />
+			<aside className={modalStyle} ref={rootRef}>
 				<form className={styles.form} onSubmit={handleSubmit}>
-					<Text as={'h2'} size={31} weight={800} uppercase={true}>
+					<Text as='h2' size={31} weight={800} uppercase>
 						Задайте параметры
 					</Text>
 					<Select
@@ -130,7 +148,6 @@ export const ArticleParamsForm: React.FC<ArticleParamsFormProps> = ({
 						selected={contentWidth}
 						onChange={handleContentWidthChange}
 					/>
-					<Separator />
 					<div className={styles.bottomContainer}>
 						<Button type='submit' title='Применить' />
 						<Button type='button' title='Сбросить' onClick={handleReset} />
